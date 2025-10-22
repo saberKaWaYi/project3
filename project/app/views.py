@@ -224,3 +224,29 @@ def rack_power_excel(request):
     response['Content-Disposition']=f'attachment; filename="{urllib.parse.quote(filename)}"'
     response.delete=True
     return response
+
+@api_view(['POST'])
+def rack_power_excel_all(request):
+    begin_time=request.data["begin_time"];end_time=request.data["end_time"]
+    query=f'''
+    SELECT * FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' ORDER BY ts ASC
+    '''
+    conn=Connect_Clickhouse(config)
+    client=conn.client
+    data=conn.query(query)
+    temp_dir=os.path.join(os.getcwd(),"temp_files")
+    os.makedirs(temp_dir,exist_ok=True)
+    temp_file=tempfile.NamedTemporaryFile(
+        suffix='.xlsx',
+        delete=False,
+        dir=os.path.join(os.getcwd(),"temp_files")
+    )
+    temp_file.close()
+    with pd.ExcelWriter(temp_file.name) as writer:
+        data.to_excel(writer,index=False)
+    response=FileResponse(open(temp_file.name,'rb'))
+    response['Content-Type']='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    filename=f"from_{begin_time}_to_{end_time}_{int(time.time())}"
+    response['Content-Disposition']=f'attachment; filename="{urllib.parse.quote(filename)}"'
+    response.delete=True
+    return response
