@@ -1,0 +1,9 @@
+FROM dockerhub.capitalonline.net/devops_project/power_collect:3.11-slim
+RUN mkdir -p /app
+ADD . /app
+WORKDIR /app/project
+COPY requirements.txt /app/project/requirements.txt
+RUN pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+COPY . /app/
+EXPOSE 8000
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
