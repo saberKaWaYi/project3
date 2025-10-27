@@ -291,7 +291,7 @@ def rack_power_list(request):
             zd_temp[i[-2]]={}
             zd_temp[i[-2]]["hostname"]=i[-2]
             zd_temp[i[-2]]["type"]=i[-1]
-            zd_temp[i[-2]]["data_info"]=[{"data_value":[[],[]],"unit":"V"},{"data_value":[[],[]],"unit":"A"},{"data_value":[[],[]],"unit":"KW"}]
+            zd_temp[i[-2]]["data_info"]=[{"data_value":[["time"],["V"]],"unit":"V","name":"V"},{"data_value":[["time"],["A"]],"unit":"A","name":"A"},{"data_value":[["time"],["KW"]],"unit":"KW","name":"A"}]
         zd_temp[i[-2]]["data_info"][0]["data_value"][0].append(i[3])
         zd_temp[i[-2]]["data_info"][0]["data_value"][1].append(round(eval(i[0]),4))
         zd_temp[i[-2]]["data_info"][1]["data_value"][0].append(i[3])
