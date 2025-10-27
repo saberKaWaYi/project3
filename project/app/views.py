@@ -308,3 +308,38 @@ def rack_power_list(request):
     for i in zd_temp:
         zd["data"].append(zd_temp[i])
     return Response(zd)
+
+@api_view(['POST'])
+def rack_power_list_excel(request):
+    zd={};zd["code"]=200;zd["msg"]="";zd["data"]=[]
+    begin_time=request.data["begin_time"];end_time=request.data["end_time"]
+    city=request.data["city"];data_center=request.data["data_center"];room=request.data["room"];rack=request.data["rack"]
+    query=f'''
+    SELECT voltage,current,power,ts,hostname FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
+    '''
+    conn=Connect_Clickhouse(config)
+    client=conn.client
+    data=conn.query(query)[["voltage","current","power","ts","hostname"]].values.tolist()
+    zd_temp={}
+    for i in data:
+        if i[-1] not in zd_temp:
+            zd_temp[i[-1]]=[]
+        zd_temp[i[-1]].append(i[:4])
+    temp_dir=os.path.join(os.getcwd(),"temp_files")
+    os.makedirs(temp_dir,exist_ok=True)
+    temp_file=tempfile.NamedTemporaryFile(
+        suffix='.xlsx',
+        delete=False,
+        dir=temp_dir
+    )
+    temp_file.close()
+    with pd.ExcelWriter(temp_file.name) as writer:
+        for i in zd_temp:
+            data=pd.DataFrame(zd_temp[i],columns=["voltage","current","power","ts"])
+            data.to_excel(writer,sheet_name=i,index=False)
+    response=FileResponse(open(temp_file.name,'rb'))
+    response['Content-Type']='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    filename=f"{rack}_power_list.xlsx"
+    response['Content-Disposition']=f'attachment; filename="{urllib.parse.quote(filename)}"'
+    response.delete=True
+    return response
