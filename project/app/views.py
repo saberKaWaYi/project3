@@ -76,7 +76,7 @@ config={
 }
 # config={
 #     "connection":{
-#         "TIMES":1000,
+#         "TIMES":3,
 #         "TIME":0.1
 #     },
 #     "clickhouse":{
@@ -342,4 +342,78 @@ def rack_power_list_excel(request):
     filename=f"{rack}_power_list.xlsx"
     response['Content-Disposition']=f'attachment; filename="{urllib.parse.quote(filename)}"'
     response.delete=True
+    return response
+
+@api_view(['POST'])
+def power_csv_all_more(request):
+    batch_size=100000;offset=0
+    begin_time=request.data.get("begin_time");end_time=request.data.get("end_time");time_grain=request.data.get("time_grain")
+    query=f'''
+    SELECT
+        toStartOfInterval(ts, INTERVAL {time_grain} MINUTE) AS period_start,
+        city,
+        data_center,
+        room,
+        rack,
+        hostname,
+        ip,
+        brand,
+        type,
+        avg(voltage) AS avg_voltage,
+        avg(current) AS avg_current,
+        avg(power) AS avg_power
+    FROM power.power_data
+    WHERE ts >= '{begin_time}' AND ts < '{end_time}'
+    GROUP BY
+        city,
+        data_center,
+        room,
+        rack,
+        hostname,
+        ip,
+        brand,
+        type,
+        toStartOfInterval(ts, INTERVAL {time_grain} MINUTE)
+    ORDER BY period_start, hostname
+    LIMIT {batch_size} OFFSET 
+    '''
+    print(query)
+    conn=Connect_Clickhouse(config)
+    client=conn.client
+    temp_dir=os.path.join(os.getcwd(),"temp_files")
+    os.makedirs(temp_dir,exist_ok=True)
+    temp_file=tempfile.NamedTemporaryFile(
+        suffix='.csv',
+        delete=False,
+        dir=temp_dir,
+        mode="w+",
+        encoding="utf-8"
+    )
+    temp_file.close()
+    with open(temp_file.name,"w",newline="",encoding="utf-8") as f:
+        header_written=False
+        while True:
+            query_temp=query+str(offset)
+            data=conn.query(query_temp)
+            if data.empty:
+                break
+            if not header_written:
+                data.to_csv(f,header=True,index=False)
+                header_written=True
+            else:
+                data.to_csv(f,header=False,index=False)
+            del data
+            offset+=batch_size
+    def delete_temp_file():
+        try:
+            if os.path.exists(temp_file.name):
+                os.remove(temp_file.name)
+        except Exception as e:
+            logging.error(f"删除临时文件失败: {e}")
+    response=FileResponse(open(temp_file.name,'rb'))
+    response['Content-Type']='text/csv'
+    filename=f"from_{begin_time}_to_{end_time}_{int(time.time())}.csv"
+    response['Content-Disposition']=f'attachment; filename="{urllib.parse.quote(filename)}"'
+    response.delete=True
+    threading.Timer(300,delete_temp_file).start()
     return response
