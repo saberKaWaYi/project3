@@ -291,20 +291,27 @@ def rack_power_list(request):
             zd_temp[i[-2]]={}
             zd_temp[i[-2]]["hostname"]=i[-2]
             zd_temp[i[-2]]["type"]=i[-1]
-            zd_temp[i[-2]]["data_info"]=[{"data_value":[["time"],["V"]],"unit":"V","name":"V"},{"data_value":[["time"],["A"]],"unit":"A","name":"A"},{"data_value":[["time"],["KW"]],"unit":"KW","name":"A"}]
-        zd_temp[i[-2]]["data_info"][0]["data_value"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][0]["data_value"][1].append(round(eval(i[0]),4))
-        zd_temp[i[-2]]["data_info"][1]["data_value"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][1]["data_value"][1].append(round(eval(i[1]),4))
-        zd_temp[i[-2]]["data_info"][2]["data_value"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][2]["data_value"][1].append(round(eval(i[2])/1000,4))
+            zd_temp[i[-2]]["data_info"]=[{"data":[[],[]],"unit":"V","name":"V"},{"data":[[],[]],"unit":"A","name":"A"},{"data":[[],[]],"unit":"KW","name":"A"}]
+        zd_temp[i[-2]]["data_info"][0]["data"][0].append(i[3])
+        zd_temp[i[-2]]["data_info"][0]["data"][1].append(round(eval(i[0]),4))
+        zd_temp[i[-2]]["data_info"][1]["data"][0].append(i[3])
+        zd_temp[i[-2]]["data_info"][1]["data"][1].append(round(eval(i[1]),4))
+        zd_temp[i[-2]]["data_info"][2]["data"][0].append(i[3])
+        zd_temp[i[-2]]["data_info"][2]["data"][1].append(round(eval(i[2])/1000,4))
     for i in zd_temp:
-        zd_temp[i]["data_info"][0]["max"]=round(max(zd_temp[i]["data_info"][0]["data_value"][1]),4)
-        zd_temp[i]["data_info"][0]["min"]=round(min(zd_temp[i]["data_info"][0]["data_value"][1]),4)
-        zd_temp[i]["data_info"][1]["max"]=round(max(zd_temp[i]["data_info"][1]["data_value"][1]),4)
-        zd_temp[i]["data_info"][1]["min"]=round(min(zd_temp[i]["data_info"][1]["data_value"][1]),4)
-        zd_temp[i]["data_info"][2]["max"]=round(max(zd_temp[i]["data_info"][2]["data_value"][1]),4)
-        zd_temp[i]["data_info"][2]["min"]=round(min(zd_temp[i]["data_info"][2]["data_value"][1]),4)
+        zd_temp[i]["data_info"][0]["max"]=round(max(zd_temp[i]["data_info"][0]["data"][1]),4)
+        zd_temp[i]["data_info"][0]["min"]=round(min(zd_temp[i]["data_info"][0]["data"][1]),4)
+        zd_temp[i]["data_info"][1]["max"]=round(max(zd_temp[i]["data_info"][1]["data"][1]),4)
+        zd_temp[i]["data_info"][1]["min"]=round(min(zd_temp[i]["data_info"][1]["data"][1]),4)
+        zd_temp[i]["data_info"][2]["max"]=round(max(zd_temp[i]["data_info"][2]["data"][1]),4)
+        zd_temp[i]["data_info"][2]["min"]=round(min(zd_temp[i]["data_info"][2]["data"][1]),4)
+    for i in zd_temp:
+        zd_temp[i]["data_info"][0]["data"][0].insert(0,"time")
+        zd_temp[i]["data_info"][0]["data"][1].insert(0,"V")
+        zd_temp[i]["data_info"][1]["data"][0].insert(0,"time")
+        zd_temp[i]["data_info"][1]["data"][1].insert(0,"A")
+        zd_temp[i]["data_info"][2]["data"][0].insert(0,"time")
+        zd_temp[i]["data_info"][2]["data"][1].insert(0,"KW")
     for i in zd_temp:
         zd["data"].append(zd_temp[i])
     return Response(zd)
