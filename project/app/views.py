@@ -250,3 +250,38 @@ def rack_power_excel_all(request):
     response['Content-Disposition']=f'attachment; filename="{urllib.parse.quote(filename)}"'
     response.delete=True
     return response
+
+@api_view(['POST'])
+def rack_power_list(request):
+    zd={};zd["code"]=200;zd["msg"]="";zd["data"]=[]
+    begin_time=request.data["begin_time"];end_time=request.data["end_time"]
+    city=request.data["city"];data_center=request.data["data_center"];room=request.data["room"];rack=request.data["rack"]
+    query=f'''
+    SELECT voltage,current,power,ts,hostname,type FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
+    '''
+    conn=Connect_Clickhouse(config)
+    client=conn.client
+    data=conn.query(query)[["voltage","current","power","ts","hostname","type"]].values.tolist()
+    zd_temp={}
+    for i in data:
+        if i[-2] not in zd_temp:
+            zd_temp[i[-2]]={}
+            zd_temp[i[-2]]["hostname"]=i[-2]
+            zd_temp[i[-2]]["type"]=i[-1]
+            zd_temp[i[-2]]["data_info"]=[{"data_value":[[],[]],"unit":"V"},{"data_value":[[],[]],"unit":"A"},{"data_value":[[],[]],"unit":"KW"}]
+        zd_temp[i[-2]]["data_info"][0]["data_value"][0].append(i[3])
+        zd_temp[i[-2]]["data_info"][0]["data_value"][1].append(i[0])
+        zd_temp[i[-2]]["data_info"][1]["data_value"][0].append(i[3])
+        zd_temp[i[-2]]["data_info"][1]["data_value"][1].append(i[1])
+        zd_temp[i[-2]]["data_info"][2]["data_value"][0].append(i[3])
+        zd_temp[i[-2]]["data_info"][2]["data_value"][1].append(round(i[2]/1000,4))
+    for i in zd_temp:
+        zd_temp[i]["data_info"][0]["max"]=max(zd_temp[i]["data_info"][0]["data_value"][1])
+        zd_temp[i]["data_info"][0]["min"]=min(zd_temp[i]["data_info"][0]["data_value"][1])
+        zd_temp[i]["data_info"][1]["max"]=max(zd_temp[i]["data_info"][1]["data_value"][1])
+        zd_temp[i]["data_info"][1]["min"]=min(zd_temp[i]["data_info"][1]["data_value"][1])
+        zd_temp[i]["data_info"][2]["max"]=max(zd_temp[i]["data_info"][2]["data_value"][1])
+        zd_temp[i]["data_info"][2]["min"]=min(zd_temp[i]["data_info"][2]["data_value"][1])
+    for i in zd:
+        zd["data"].append(zd[i])
+    return Response(zd)
