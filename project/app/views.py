@@ -272,7 +272,7 @@ def rack_power_list(request):
         zd_temp[i[-2]]["data_info"][0]["data_value"][0].append(i[3])
         zd_temp[i[-2]]["data_info"][0]["data_value"][1].append(round(eval(i[0]),4))
         zd_temp[i[-2]]["data_info"][1]["data_value"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][1]["data_value"][1].append(round(eval(i[1])),4)
+        zd_temp[i[-2]]["data_info"][1]["data_value"][1].append(round(eval(i[1]),4))
         zd_temp[i[-2]]["data_info"][2]["data_value"][0].append(i[3])
         zd_temp[i[-2]]["data_info"][2]["data_value"][1].append(round(eval(i[2])/1000,4))
     for i in zd_temp:
