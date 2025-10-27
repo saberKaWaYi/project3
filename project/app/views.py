@@ -242,6 +242,7 @@ def power_csv_all(request):
         suffix='.csv',
         delete=False,
         dir=temp_dir,
+        mode="w+",
         encoding="utf-8"
     )
     temp_file.close()
