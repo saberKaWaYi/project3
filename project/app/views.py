@@ -270,18 +270,18 @@ def rack_power_list(request):
             zd_temp[i[-2]]["type"]=i[-1]
             zd_temp[i[-2]]["data_info"]=[{"data_value":[[],[]],"unit":"V"},{"data_value":[[],[]],"unit":"A"},{"data_value":[[],[]],"unit":"KW"}]
         zd_temp[i[-2]]["data_info"][0]["data_value"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][0]["data_value"][1].append(i[0])
+        zd_temp[i[-2]]["data_info"][0]["data_value"][1].append(eval(i[0]))
         zd_temp[i[-2]]["data_info"][1]["data_value"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][1]["data_value"][1].append(i[1])
+        zd_temp[i[-2]]["data_info"][1]["data_value"][1].append(eval(i[1]))
         zd_temp[i[-2]]["data_info"][2]["data_value"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][2]["data_value"][1].append(round(i[2]/1000,4))
+        zd_temp[i[-2]]["data_info"][2]["data_value"][1].append(round(eval(i[2])/1000,4))
     for i in zd_temp:
-        zd_temp[i]["data_info"][0]["max"]=max(zd_temp[i]["data_info"][0]["data_value"][1])
-        zd_temp[i]["data_info"][0]["min"]=min(zd_temp[i]["data_info"][0]["data_value"][1])
-        zd_temp[i]["data_info"][1]["max"]=max(zd_temp[i]["data_info"][1]["data_value"][1])
-        zd_temp[i]["data_info"][1]["min"]=min(zd_temp[i]["data_info"][1]["data_value"][1])
-        zd_temp[i]["data_info"][2]["max"]=max(zd_temp[i]["data_info"][2]["data_value"][1])
-        zd_temp[i]["data_info"][2]["min"]=min(zd_temp[i]["data_info"][2]["data_value"][1])
-    for i in zd:
-        zd["data"].append(zd[i])
+        zd_temp[i]["data_info"][0]["max"]=round(max(zd_temp[i]["data_info"][0]["data_value"][1]),4)
+        zd_temp[i]["data_info"][0]["min"]=round(min(zd_temp[i]["data_info"][0]["data_value"][1]),4)
+        zd_temp[i]["data_info"][1]["max"]=round(max(zd_temp[i]["data_info"][1]["data_value"][1]),4)
+        zd_temp[i]["data_info"][1]["min"]=round(min(zd_temp[i]["data_info"][1]["data_value"][1]),4)
+        zd_temp[i]["data_info"][2]["max"]=round(max(zd_temp[i]["data_info"][2]["data_value"][1]),4)
+        zd_temp[i]["data_info"][2]["min"]=round(min(zd_temp[i]["data_info"][2]["data_value"][1]),4)
+    for i in zd_temp:
+        zd["data"].append(zd_temp[i])
     return Response(zd)
