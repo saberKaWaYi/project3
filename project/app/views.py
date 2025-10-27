@@ -225,30 +225,52 @@ def rack_power_excel(request):
     response.delete=True
     return response
 
+import threading
+
 @api_view(['POST'])
-def rack_power_excel_all(request):
-    begin_time=request.data["begin_time"];end_time=request.data["end_time"]
+def power_csv_all(request):
+    batch_size=100000;offset=0
+    begin_time=request.data.get("begin_time");end_time=request.data.get("end_time")
     query=f'''
-    SELECT * FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' ORDER BY ts ASC
+    SELECT * FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' ORDER BY ts ASC LIMIT {str(batch_size)} OFFSET 
     '''
     conn=Connect_Clickhouse(config)
     client=conn.client
-    data=conn.query(query)
     temp_dir=os.path.join(os.getcwd(),"temp_files")
     os.makedirs(temp_dir,exist_ok=True)
     temp_file=tempfile.NamedTemporaryFile(
-        suffix='.xlsx',
+        suffix='.csv',
         delete=False,
-        dir=os.path.join(os.getcwd(),"temp_files")
+        dir=temp_dir,
+        encoding="utf-8"
     )
     temp_file.close()
-    with pd.ExcelWriter(temp_file.name) as writer:
-        data.to_excel(writer,index=False)
+    with open(temp_file.name,"w",newline="",encoding="utf-8") as f:
+        header_written=False
+        while True:
+            query_temp=query+str(offset)
+            data=conn.query(query_temp)
+            if data.empty:
+                break
+            if not header_written:
+                data.to_csv(f,header=True,index=False)
+                header_written=True
+            else:
+                data.to_csv(f,header=False,index=False)
+            del data
+            offset+=batch_size
+    def delete_temp_file():
+        try:
+            if os.path.exists(temp_file.name):
+                os.remove(temp_file.name)
+        except Exception as e:
+            logging.error(f"删除临时文件失败: {e}")
     response=FileResponse(open(temp_file.name,'rb'))
-    response['Content-Type']='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    filename=f"from_{begin_time}_to_{end_time}_{int(time.time())}"
+    response['Content-Type']='text/csv'
+    filename=f"from_{begin_time}_to_{end_time}_{int(time.time())}.csv"
     response['Content-Disposition']=f'attachment; filename="{urllib.parse.quote(filename)}"'
     response.delete=True
+    threading.Timer(300,delete_temp_file).start()
     return response
 
 @api_view(['POST'])

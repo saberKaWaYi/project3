@@ -6,6 +6,6 @@ urlpatterns = [
     path('menu_data', menu_data, name='menu_data'),
     path('rack_power', rack_power, name='rack_power'),
     path('rack_power_excel', rack_power_excel, name='rack_power_excel'),
-    path('rack_power_excel_all', rack_power_excel_all, name='rack_power_excel_all'),
+    path('power_csv_all', power_csv_all, name='power_csv_all'),
     path('rack_power_list', rack_power_list, name='rack_power_list')
 ]
