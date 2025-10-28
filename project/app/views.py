@@ -119,10 +119,16 @@ def menu_data(request):
         temp[s].add(d)
     zd["data"]=[]
     for i in temp:
+        lt_temp=list(temp[i])
+        lt_temp.sort()
+        if "-" in lt_temp[0]:
+            lt_temp=[(int(i.split("-")[0]),int(i.split("-")[1])) for i in lt_temp]
+            lt_temp.sort()
+            lt_temp=[f"{i[0]}-{i[1]}" for i in lt_temp]
         zd_temp={}
         zd_temp["code"]=i
         zd_temp["name"]=i
-        zd_temp["rack_list"]=sorted(list(temp[i]))
+        zd_temp["rack_list"]=lt_temp
         zd["data"].append(zd_temp)
     return Response(zd)
 
@@ -174,7 +180,7 @@ def rack_power(request):
     temp["data"]=[lt1,lt2]
     zd["data"]["power_data"].append(temp)
     temp={}
-    power=[i/1000 for i in data["power"].values.tolist()]
+    power=[round(i/1000,2) for i in data["power"].values.tolist()]
     temp["max"]=max(power);temp["min"]=min(power);temp["name"]="KW";temp["unit"]="KW"
     lt1=data["ts"].values.tolist();lt1.insert(0,"time")
     lt2=power;lt2.insert(0,"KW")
@@ -280,31 +286,31 @@ def rack_power_list(request):
     begin_time=request.data["begin_time"];end_time=request.data["end_time"]
     city=request.data["city"];data_center=request.data["data_center"];room=request.data["room"];rack=request.data["rack"]
     query=f'''
-    SELECT voltage,current,power,ts,hostname,type FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
+    SELECT voltage,current,power,ts,hostname,type,ip FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
     '''
     conn=Connect_Clickhouse(config)
     client=conn.client
-    data=conn.query(query)[["voltage","current","power","ts","hostname","type"]].values.tolist()
+    data=conn.query(query)[["voltage","current","power","ts","ip","hostname","type"]].values.tolist()
     zd_temp={}
     for i in data:
         if i[-2] not in zd_temp:
             zd_temp[i[-2]]={}
-            zd_temp[i[-2]]["hostname"]=i[-2]
+            zd_temp[i[-2]]["hostname"]=i[-2]+"("+i[-3]+")"
             zd_temp[i[-2]]["type"]=i[-1]
             zd_temp[i[-2]]["data_info"]=[{"data":[[],[]],"unit":"V","name":"V"},{"data":[[],[]],"unit":"A","name":"A"},{"data":[[],[]],"unit":"KW","name":"KW"}]
         zd_temp[i[-2]]["data_info"][0]["data"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][0]["data"][1].append(round(eval(i[0]),4))
+        zd_temp[i[-2]]["data_info"][0]["data"][1].append(round(eval(i[0]),2))
         zd_temp[i[-2]]["data_info"][1]["data"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][1]["data"][1].append(round(eval(i[1]),4))
+        zd_temp[i[-2]]["data_info"][1]["data"][1].append(round(eval(i[1]),2))
         zd_temp[i[-2]]["data_info"][2]["data"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][2]["data"][1].append(round(eval(i[2])/1000,4))
+        zd_temp[i[-2]]["data_info"][2]["data"][1].append(round(eval(i[2])/1000,2))
     for i in zd_temp:
-        zd_temp[i]["data_info"][0]["max"]=round(max(zd_temp[i]["data_info"][0]["data"][1]),4)
-        zd_temp[i]["data_info"][0]["min"]=round(min(zd_temp[i]["data_info"][0]["data"][1]),4)
-        zd_temp[i]["data_info"][1]["max"]=round(max(zd_temp[i]["data_info"][1]["data"][1]),4)
-        zd_temp[i]["data_info"][1]["min"]=round(min(zd_temp[i]["data_info"][1]["data"][1]),4)
-        zd_temp[i]["data_info"][2]["max"]=round(max(zd_temp[i]["data_info"][2]["data"][1]),4)
-        zd_temp[i]["data_info"][2]["min"]=round(min(zd_temp[i]["data_info"][2]["data"][1]),4)
+        zd_temp[i]["data_info"][0]["max"]=round(max(zd_temp[i]["data_info"][0]["data"][1]),2)
+        zd_temp[i]["data_info"][0]["min"]=round(min(zd_temp[i]["data_info"][0]["data"][1]),2)
+        zd_temp[i]["data_info"][1]["max"]=round(max(zd_temp[i]["data_info"][1]["data"][1]),2)
+        zd_temp[i]["data_info"][1]["min"]=round(min(zd_temp[i]["data_info"][1]["data"][1]),2)
+        zd_temp[i]["data_info"][2]["max"]=round(max(zd_temp[i]["data_info"][2]["data"][1]),2)
+        zd_temp[i]["data_info"][2]["min"]=round(min(zd_temp[i]["data_info"][2]["data"][1]),2)
     for i in zd_temp:
         zd_temp[i]["data_info"][0]["data"][0].insert(0,"time")
         zd_temp[i]["data_info"][0]["data"][1].insert(0,"V")
@@ -331,6 +337,9 @@ def rack_power_list_excel(request):
     for i in data:
         if i[-1] not in zd_temp:
             zd_temp[i[-1]]=[]
+        i[0]=round(eval(i[0]),2)
+        i[1]=round(eval(i[1]),2)
+        i[2]=round(eval(i[2]),2)
         zd_temp[i[-1]].append(i[:4])
     temp_dir=os.path.join(os.getcwd(),"temp_files")
     os.makedirs(temp_dir,exist_ok=True)
@@ -384,7 +393,6 @@ def power_csv_all_more(request):
     ORDER BY period_start, hostname
     LIMIT {batch_size} OFFSET 
     '''
-    print(query)
     conn=Connect_Clickhouse(config)
     client=conn.client
     temp_dir=os.path.join(os.getcwd(),"temp_files")
