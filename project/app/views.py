@@ -286,31 +286,31 @@ def rack_power_list(request):
     begin_time=request.data["begin_time"];end_time=request.data["end_time"]
     city=request.data["city"];data_center=request.data["data_center"];room=request.data["room"];rack=request.data["rack"]
     query=f'''
-    SELECT voltage,current,power,ts,hostname,type FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
+    SELECT voltage,current,power,ts,hostname,type,ip FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
     '''
     conn=Connect_Clickhouse(config)
     client=conn.client
-    data=conn.query(query)[["voltage","current","power","ts","hostname","type"]].values.tolist()
+    data=conn.query(query)[["voltage","current","power","ts","ip","hostname","type"]].values.tolist()
     zd_temp={}
     for i in data:
         if i[-2] not in zd_temp:
             zd_temp[i[-2]]={}
-            zd_temp[i[-2]]["hostname"]=i[-2]
+            zd_temp[i[-2]]["hostname"]=i[-2]+"("+i[-3]+")"
             zd_temp[i[-2]]["type"]=i[-1]
             zd_temp[i[-2]]["data_info"]=[{"data":[[],[]],"unit":"V","name":"V"},{"data":[[],[]],"unit":"A","name":"A"},{"data":[[],[]],"unit":"KW","name":"KW"}]
         zd_temp[i[-2]]["data_info"][0]["data"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][0]["data"][1].append(round(eval(i[0]),4))
+        zd_temp[i[-2]]["data_info"][0]["data"][1].append(round(eval(i[0]),2))
         zd_temp[i[-2]]["data_info"][1]["data"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][1]["data"][1].append(round(eval(i[1]),4))
+        zd_temp[i[-2]]["data_info"][1]["data"][1].append(round(eval(i[1]),2))
         zd_temp[i[-2]]["data_info"][2]["data"][0].append(i[3])
-        zd_temp[i[-2]]["data_info"][2]["data"][1].append(round(eval(i[2])/1000,4))
+        zd_temp[i[-2]]["data_info"][2]["data"][1].append(round(eval(i[2])/1000,2))
     for i in zd_temp:
-        zd_temp[i]["data_info"][0]["max"]=round(max(zd_temp[i]["data_info"][0]["data"][1]),4)
-        zd_temp[i]["data_info"][0]["min"]=round(min(zd_temp[i]["data_info"][0]["data"][1]),4)
-        zd_temp[i]["data_info"][1]["max"]=round(max(zd_temp[i]["data_info"][1]["data"][1]),4)
-        zd_temp[i]["data_info"][1]["min"]=round(min(zd_temp[i]["data_info"][1]["data"][1]),4)
-        zd_temp[i]["data_info"][2]["max"]=round(max(zd_temp[i]["data_info"][2]["data"][1]),4)
-        zd_temp[i]["data_info"][2]["min"]=round(min(zd_temp[i]["data_info"][2]["data"][1]),4)
+        zd_temp[i]["data_info"][0]["max"]=round(max(zd_temp[i]["data_info"][0]["data"][1]),2)
+        zd_temp[i]["data_info"][0]["min"]=round(min(zd_temp[i]["data_info"][0]["data"][1]),2)
+        zd_temp[i]["data_info"][1]["max"]=round(max(zd_temp[i]["data_info"][1]["data"][1]),2)
+        zd_temp[i]["data_info"][1]["min"]=round(min(zd_temp[i]["data_info"][1]["data"][1]),2)
+        zd_temp[i]["data_info"][2]["max"]=round(max(zd_temp[i]["data_info"][2]["data"][1]),2)
+        zd_temp[i]["data_info"][2]["min"]=round(min(zd_temp[i]["data_info"][2]["data"][1]),2)
     for i in zd_temp:
         zd_temp[i]["data_info"][0]["data"][0].insert(0,"time")
         zd_temp[i]["data_info"][0]["data"][1].insert(0,"V")
