@@ -119,10 +119,16 @@ def menu_data(request):
         temp[s].add(d)
     zd["data"]=[]
     for i in temp:
+        lt_temp=list(temp[i])
+        lt_temp.sort()
+        if "-" in lt_temp[0]:
+            lt_temp=[(int(i.split("-")[0]),int(i.split("-")[1])) for i in lt_temp]
+            lt_temp.sort()
+            lt_temp=[f"{i[0]}-{i[1]}" for i in lt_temp]
         zd_temp={}
         zd_temp["code"]=i
         zd_temp["name"]=i
-        zd_temp["rack_list"]=sorted(list(temp[i]))
+        zd_temp["rack_list"]=lt_temp
         zd["data"].append(zd_temp)
     return Response(zd)
 
@@ -174,7 +180,7 @@ def rack_power(request):
     temp["data"]=[lt1,lt2]
     zd["data"]["power_data"].append(temp)
     temp={}
-    power=[i/1000 for i in data["power"].values.tolist()]
+    power=[round(i/1000,2) for i in data["power"].values.tolist()]
     temp["max"]=max(power);temp["min"]=min(power);temp["name"]="KW";temp["unit"]="KW"
     lt1=data["ts"].values.tolist();lt1.insert(0,"time")
     lt2=power;lt2.insert(0,"KW")
@@ -331,6 +337,9 @@ def rack_power_list_excel(request):
     for i in data:
         if i[-1] not in zd_temp:
             zd_temp[i[-1]]=[]
+        i[0]=round(eval(i[0]),2)
+        i[1]=round(eval(i[1]),2)
+        i[2]=round(eval(i[2]),2)
         zd_temp[i[-1]].append(i[:4])
     temp_dir=os.path.join(os.getcwd(),"temp_files")
     os.makedirs(temp_dir,exist_ok=True)
@@ -384,7 +393,6 @@ def power_csv_all_more(request):
     ORDER BY period_start, hostname
     LIMIT {batch_size} OFFSET 
     '''
-    print(query)
     conn=Connect_Clickhouse(config)
     client=conn.client
     temp_dir=os.path.join(os.getcwd(),"temp_files")
