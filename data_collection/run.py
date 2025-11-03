@@ -266,7 +266,7 @@ class Run:
                 logging_error.error("="*50)
 
     def process_else_demo2(self,message):
-        lt1=[];lt2=[];lt3=[]
+        lt1=[];lt2=[];lt3=[];lt4=[]
         for line in message.split("\n"):
             line=line.strip().lower()
             try:
@@ -278,12 +278,18 @@ class Run:
                     line=line.split("|")
                     lt2.append(eval(line[1]))
                     continue
-                if ("ps" in line and "pin" in line) or ("psu" in line and "power" in line and "in" in line) or "pw consumption" in line or "sys_power" in line or "sys power" in line or "total_power" in line:
+                if ("ps" in line and "pin" in line) or ("psu" in line and "power" in line and "in" in line):
                     line=line.split("|")
                     lt3.append(eval(line[1]))
                     continue
+                if "pw consumption" in line or "sys_power" in line or "sys power" in line or "total_power" in line:
+                    line=line.split("|")
+                    lt4.append(eval(line[1]))
+                    continue
             except:
                 pass
+        if lt4:
+            return self.demo(lt1,lt2,lt4)
         return self.demo(lt1,lt2,lt3)
 
     def process_else_demo1(self,proc,zd,cmd,return_code):
