@@ -121,7 +121,7 @@ def menu_data(request):
     for i in temp:
         lt_temp=list(temp[i])
         lt_temp.sort()
-        if "-" in lt_temp[0]:
+        if i.split("-")[0]=="庆阳" and "-" in lt_temp[0]:
             lt_temp=[(int(i.split("-")[0]),int(i.split("-")[1])) for i in lt_temp]
             lt_temp.sort()
             lt_temp=[f"{i[0]}-{i[1]}" for i in lt_temp]
