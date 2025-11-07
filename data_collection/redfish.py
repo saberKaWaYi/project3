@@ -114,6 +114,17 @@ class Huawei(Basic):
     def get_psu_detail(self):
         if not self.session_id:
             return [[],[],[]]
+        url=url=f"{self.base_url}/Chassis/Enc/Power"
+        try:
+            response=self.session.get(
+                url,
+                verify=False,
+                timeout=5
+            )
+            temp=response.json()["PowerControl"][0]["PowerConsumedWatts"]
+            return [[],[],[temp]]
+        except:
+            pass
         url=url=f"{self.base_url}/Chassis/Enclosure/Power"
         try:
             response=self.session.get(
