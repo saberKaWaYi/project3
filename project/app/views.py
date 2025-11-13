@@ -249,7 +249,7 @@ def rack_power(request):
     zd["data"]["power_data"].append(temp)
     conn=Connect_Mongodb()
     x=conn.get_collection("cds_ci_att_value_rack",{"status":1,"data_center_name":data_center,"room_name":room,"rack_name":rack},{"std_quantity":1})["std_quantity"].values.tolist()[0]
-    zd["data"]["power_unit"]="KV"
+    zd["data"]["power_unit"]="KW"
     zd["data"]["std_quantity"]=x
     return Response(zd)
 
