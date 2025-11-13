@@ -28,7 +28,6 @@ logging_redfish.addHandler(handler)
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 import requests
-import atexit
 
 class Basic:
 
@@ -40,7 +39,6 @@ class Basic:
         self.session=requests.Session();self.session.verify=False
         self.session_id=None
         self.error_reason=None
-        atexit.register(self.logout)
         self.login()
 
     def login(self):
@@ -75,16 +73,19 @@ class Basic:
     def test(self):
         print(self.session_id)
 
-    def logout(self):
-        if not self.session_id:
-            return
-        try:
-            logout_url=f"{self.base_url}/SessionService/Sessions/{self.session_id}"
-            self.session.delete(logout_url,timeout=5)
-            self.session.close()
-            self.session_id=None
-        except:
-            logging_redfish.error(f"{self.idrac_ip}退出失败。")
+    def __enter__(self):
+        return self
+
+    def __exit__(self,exc_type,exc_val,exc_tb):
+        if self.session_id:
+            try:
+                logout_url=f"{self.base_url}/SessionService/Sessions/{self.session_id}"
+                self.session.delete(logout_url,timeout=3)
+            except Exception as e:
+                logging_redfish.error(f"{self.idrac_ip} 主动退出失败：{str(e)}")
+        self.session.close()
+        self.session_id=None
+        return False
 
 class Dell(Basic):
 
@@ -101,9 +102,13 @@ class Dell(Basic):
             lt=response.json()["PowerSupplies"]
             result=[[],[],[]]
             for i in lt:
+                if not i["PowerInputWatts"]:
+                    continue
+                result[2].append(i["PowerInputWatts"])
+                if not i["LineInputVoltage"]:
+                    continue
                 result[0].append(i["LineInputVoltage"])
                 result[1].append(i["PowerInputWatts"]/i["LineInputVoltage"])
-                result[2].append(i["PowerInputWatts"])
             return result
         except Exception as e:
             logging_redfish.error("="*50+"\n"+self.idrac_ip+"\n"+str(e)+"\n"+"="*50)
@@ -114,6 +119,17 @@ class Huawei(Basic):
     def get_psu_detail(self):
         if not self.session_id:
             return [[],[],[]]
+        url=url=f"{self.base_url}/Chassis/Enc/Power"
+        try:
+            response=self.session.get(
+                url,
+                verify=False,
+                timeout=5
+            )
+            temp=response.json()["PowerControl"][0]["PowerConsumedWatts"]
+            return [[],[],[temp]]
+        except:
+            pass
         url=url=f"{self.base_url}/Chassis/Enclosure/Power"
         try:
             response=self.session.get(
@@ -133,7 +149,7 @@ class Huawei(Basic):
                 timeout=5
             )
             temp=response.json()["Members"][0]["@odata.id"].split("/")[-1]
-        except:
+        except Exception as e:
             logging_redfish.error("="*50+"\n"+self.idrac_ip+"\n"+str(e)+"\n"+"="*50)
             return  [[],[],[]]
         url=url+"/"+temp+"/"+"ThresholdSensors"

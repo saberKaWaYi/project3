@@ -100,5 +100,14 @@ if __name__=="__main__":
             "PASSWORD":"cds-cloud@2017"
         }
     }
-    zd=get_relationship(config,get_ObjectId(config,"庆阳"))
+    zd=get_relationship(config,get_ObjectId(config,"达拉斯"))
     print(zd)
+    temp={}
+    for i in zd:
+        for j in zd[i]:
+            if j[-1]=="network":
+                continue
+            if j[-2] not in temp:
+                temp[j[-2]]=0
+            temp[j[-2]]+=1
+    print(temp)

@@ -46,7 +46,7 @@ class Run:
         self.config1=config1
         self.config2=config2
         self.config3=config3
-        self.zd1=get_relationship(self.config1,get_ObjectId(self.config1,"庆阳"))
+        self.zd1=get_relationship(self.config1,get_ObjectId(self.config1,"达拉斯"))
         self.time_=datetime.now()
         u_p_list=Connect_Mysql(self.config2).get_table_data("","select ip,username,password from power.server_username_and_password")
         self.zd2=dict(zip(u_p_list["ip"].values.tolist(),u_p_list[["username","password"]].values.tolist()))
@@ -203,10 +203,11 @@ class Run:
             zd=self.tasks2.get()
             self.tasks2.task_done()
             if zd["brand"]=="dell inc.":
-                m=Dell(zd["ip"],self.zd2[zd["ip"]][0],self.zd2[zd["ip"]][1])
+                with Dell(zd["ip"],self.zd2[zd["ip"]][0],self.zd2[zd["ip"]][1]) as m:
+                    result=m.get_psu_detail()
             else:
-                m=Huawei(zd["ip"],self.zd2[zd["ip"]][0],self.zd2[zd["ip"]][1])
-            result=m.get_psu_detail()
+                with Huawei(zd["ip"],self.zd2[zd["ip"]][0],self.zd2[zd["ip"]][1]) as m:
+                    result=m.get_psu_detail()
             lt1,lt2,lt3=result[0],result[1],result[2]
             result=self.demo(lt1,lt2,lt3)
             zd["voltage"]=result[0];zd["current"]=result[1];zd["power"]=result[2]
@@ -216,9 +217,9 @@ class Run:
                 self.count2+=1
 
     def process_task2_main(self):
-        with ThreadPoolExecutor(max_workers=25) as executor:
+        with ThreadPoolExecutor(max_workers=50) as executor:
             pool=[]
-            for _ in range(25):
+            for _ in range(50):
                 pool.append(executor.submit(self.process_task2))
             for task in as_completed(pool):
                 task.result()

@@ -61,6 +61,67 @@ class Connect_Clickhouse:
                 time.sleep(self.config["connection"]["TIME"])
         logging.error(f"{query}数据获取失败。")
         raise Exception(f"{query}数据获取失败。")
+    
+from pymongo import MongoClient
+    
+class Connect_Mongodb:
+
+    def __init__(self):
+        self.config={
+            "connection":{
+                "TIMES":1000,
+                "TIME":0.1
+            },
+            "mongodb":{
+                "HOST":"10.216.141.46",
+                "PORT":27017,
+                "USERNAME":"manager",
+                "PASSWORD":"cds-cloud@2017"
+            }
+        }
+        self.client=self.login()
+        self.db=self.get_database()
+        atexit.register(self.close)
+
+    def login(self):
+        for i in range(self.config["connection"]["TIMES"]):
+            try:
+                client=MongoClient(host=self.config["mongodb"]["HOST"],port=self.config["mongodb"]["PORT"])
+                client.cds_cmdb.authenticate(self.config["mongodb"]["USERNAME"],self.config["mongodb"]["PASSWORD"])
+                return client
+            except:
+                time.sleep(self.config["connection"]["TIME"])
+        logging.error("mongodb登录失败。")
+        raise Exception("mongodb登录失败。")
+    
+    def get_database(self):
+        for i in range(self.config["connection"]["TIMES"]):
+            try:
+                return self.client.get_database("cds_cmdb")
+            except:
+                time.sleep(self.config["connection"]["TIME"])
+        logging.error("cds_cmdb获取失败。")
+        raise Exception("cds_cmdb获取失败。")
+    
+    def close(self):
+        for i in range(self.config["connection"]["TIMES"]):
+            try:
+                self.client.close()
+                return
+            except:
+                time.sleep(self.config["connection"]["TIME"])
+        logging.error("mongodb关闭失败。")
+        raise Exception("mongodb关闭失败。")
+
+    def get_collection(self,name,condition1,condition2):
+        for i in range(self.config["connection"]["TIMES"]):
+            try:
+                data=pd.DataFrame(self.db.get_collection(name).find(condition1,condition2)).astype(str)
+                return data
+            except:
+                time.sleep(self.config["connection"]["TIME"])
+        logging.error(f"{name}数据获取失败。")
+        raise Exception(f"{name}数据获取失败。")
 
 config={
     "connection":{
@@ -186,6 +247,10 @@ def rack_power(request):
     lt2=power;lt2.insert(0,"KW")
     temp["data"]=[lt1,lt2]
     zd["data"]["power_data"].append(temp)
+    conn=Connect_Mongodb()
+    x=conn.get_collection("cds_ci_att_value_rack",{"status":1,"data_center_name":data_center,"room_name":room,"rack_name":rack},{"std_quantity":1})["std_quantity"].values.tolist()[0]
+    zd["data"]["power_unit"]="KV"
+    zd["data"]["std_quantity"]=x
     return Response(zd)
 
 import tempfile
