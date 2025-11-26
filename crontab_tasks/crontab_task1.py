@@ -1,4 +1,5 @@
 from connect import *
+from datetime import datetime
 
 class Run:
 
@@ -9,6 +10,7 @@ class Run:
         self.db_mysql=Connect_Mysql(self.config1)
         self.db_clickhouse=Connect_Clickhouse(self.config2)
         self.db_mongo=Connect_Mongodb(self.config3)
+        self.time=datetime.now()
         self.zd={}
         self.result=[]
 
@@ -23,7 +25,8 @@ class Run:
             min_power varchar(100),
             average_power_rate varchar(100),
             max_power_rate varchar(100),
-            min_power_rate varchar(100)
+            min_power_rate varchar(100),
+            dt date
         );
         '''
         self.db_mysql.client.cursor().execute(sql)
@@ -61,7 +64,7 @@ class Run:
                     if not data:
                         continue
                     x=max(data);y=min(data);z=sum(data)/len(data)
-                    self.result.append((f"{city}|{data_center}|{room}|{rack}","rack",self.zd[i][j][k],round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/self.zd[i][j][k]/10,2)}%",f"{round(x/self.zd[i][j][k]/10,2)}%",f"{round(y/self.zd[i][j][k]/10,2)}"))
+                    self.result.append((f"{city}|{data_center}|{room}|{rack}","rack",self.zd[i][j][k],round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/self.zd[i][j][k]/10,2)}%",f"{round(x/self.zd[i][j][k]/10,2)}%",f"{round(y/self.zd[i][j][k]/10,2)}%",self.time))
 
     def create_room(self):
         for i in self.zd:
@@ -83,7 +86,7 @@ class Run:
                 count=0
                 for k in self.zd[i][j]:
                     count+=self.zd[i][j][k]
-                self.result.append((f"{city}|{data_center}|{room}","room",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}%",f"{round(x/count/10,2)}%",f"{round(y/count/10,2)}%"))
+                self.result.append((f"{city}|{data_center}|{room}","room",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}%",f"{round(x/count/10,2)}%",f"{round(y/count/10,2)}%",self.time))
     
     def create_data_center(self):
         for i in self.zd:
@@ -105,11 +108,11 @@ class Run:
             for j in self.zd[i]:
                 for k in self.zd[i][j]:
                     count+=self.zd[i][j][k]
-            self.result.append((f"{city}|{data_center}","data_center",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}%",f"{round(x/count/10,2)}%",f"{round(y/count/10,2)}%"))
+            self.result.append((f"{city}|{data_center}","data_center",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}%",f"{round(x/count/10,2)}%",f"{round(y/count/10,2)}%",self.time))
 
     def insert_data(self):
         sql='''
-        insert into power.info (name,type,std_power,average_power,max_power,min_power,average_power_rate,max_power_rate,min_power_rate) values (%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        insert into power.info (name,type,std_power,average_power,max_power,min_power,average_power_rate,max_power_rate,min_power_rate,dt) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         '''
         self.db_mysql.client.cursor().executemany(sql,self.result)
         self.db_mysql.client.commit()
