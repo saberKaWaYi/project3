@@ -16,7 +16,7 @@ class Run:
 
     def create_table(self):
         sql='''
-        create table if not exists power.info (
+        create table if not exists cds_report.power_info (
             name varchar(100),
             type varchar(100),
             std_power varchar(100),
@@ -112,7 +112,7 @@ class Run:
 
     def insert_data(self):
         sql='''
-        insert into power.info (name,type,std_power,average_power,max_power,min_power,average_power_rate,max_power_rate,min_power_rate,dt) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        insert into cds_report.power_info (name,type,std_power,average_power,max_power,min_power,average_power_rate,max_power_rate,min_power_rate,dt) values (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
         '''
         self.db_mysql.client.cursor().executemany(sql,self.result)
         self.db_mysql.client.commit()
