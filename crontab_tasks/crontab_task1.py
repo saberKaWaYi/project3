@@ -64,7 +64,7 @@ class Run:
                     if not data:
                         continue
                     x=max(data);y=min(data);z=sum(data)/len(data)
-                    self.result.append((f"{city}|{data_center}|{room}|{rack}","rack",self.zd[i][j][k],round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/self.zd[i][j][k]/10,2)}%",f"{round(x/self.zd[i][j][k]/10,2)}%",f"{round(y/self.zd[i][j][k]/10,2)}%",self.time))
+                    self.result.append((f"{city}|{data_center}|{room}|{rack}","rack",self.zd[i][j][k],round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/self.zd[i][j][k]/10,2)}",f"{round(x/self.zd[i][j][k]/10,2)}",f"{round(y/self.zd[i][j][k]/10,2)}",self.time))
 
     def create_room(self):
         for i in self.zd:
@@ -86,7 +86,7 @@ class Run:
                 count=0
                 for k in self.zd[i][j]:
                     count+=self.zd[i][j][k]
-                self.result.append((f"{city}|{data_center}|{room}","room",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}%",f"{round(x/count/10,2)}%",f"{round(y/count/10,2)}%",self.time))
+                self.result.append((f"{city}|{data_center}|{room}","room",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}",f"{round(x/count/10,2)}",f"{round(y/count/10,2)}",self.time))
     
     def create_data_center(self):
         for i in self.zd:
@@ -108,7 +108,7 @@ class Run:
             for j in self.zd[i]:
                 for k in self.zd[i][j]:
                     count+=self.zd[i][j][k]
-            self.result.append((f"{city}|{data_center}","data_center",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}%",f"{round(x/count/10,2)}%",f"{round(y/count/10,2)}%",self.time))
+            self.result.append((f"{city}|{data_center}","data_center",count,round(z/1000,2),round(x/1000,2),round(y/1000,2),f"{round(z/count/10,2)}",f"{round(x/count/10,2)}",f"{round(y/count/10,2)}",self.time))
 
     def insert_data(self):
         sql='''
