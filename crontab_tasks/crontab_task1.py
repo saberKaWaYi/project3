@@ -71,11 +71,14 @@ class Run:
             for j in self.zd[i]:
                 city="庆阳";data_center=i;room=j
                 sql=f'''
-                select ts,power from power.power_data where city='{city}' and data_center='{data_center}' and room='{room}' and ts >= now() - INTERVAL 1 DAY;
+                select ts,power,rack from power.power_data where city='{city}' and data_center='{data_center}' and room='{room}' and ts >= now() - INTERVAL 1 DAY;
                 '''
-                temp=self.db_clickhouse.query(sql)[["ts","power"]].values.tolist()
+                temp=self.db_clickhouse.query(sql)[["ts","power","rack"]].values.tolist()
+                jh=set(self.zd[i][j].keys())
                 zd={}
                 for _ in temp:
+                    if _[2] not in jh:
+                        continue
                     if _[0] not in zd:
                         zd[_[0]]=0
                     zd[_[0]]+=eval(_[1])
@@ -92,11 +95,17 @@ class Run:
         for i in self.zd:
             city="庆阳";data_center=i
             sql=f'''
-            select ts,power from power.power_data where city='{city}' and data_center='{data_center}' and ts >= now() - INTERVAL 1 DAY;
+            select ts,power,room,rack from power.power_data where city='{city}' and data_center='{data_center}' and ts >= now() - INTERVAL 1 DAY;
             '''
-            temp=self.db_clickhouse.query(sql)[["ts","power"]].values.tolist()
+            temp=self.db_clickhouse.query(sql)[["ts","power","room","rack"]].values.tolist()
+            jh=set()
+            for j in self.zd[i]:
+                for k in self.zd[i][j]:
+                    jh.add((j,k))
             zd={}
             for _ in temp:
+                if (_[2],_[3]) not in jh:
+                    continue
                 if _[0] not in zd:
                     zd[_[0]]=0
                 zd[_[0]]+=eval(_[1])
