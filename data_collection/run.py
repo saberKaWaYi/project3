@@ -32,7 +32,7 @@ logging_monitor.addHandler(handler)
 
 from get_info import get_relationship,get_ObjectId
 from datetime import datetime
-from connect import Connect_Mysql
+from connect import Connect_Mysql,Connect_Clickhouse
 from queue import Queue
 import threading
 from concurrent.futures import ThreadPoolExecutor,as_completed
