@@ -30,13 +30,13 @@ logging_monitor=logging.getLogger("monitor")
 logging_monitor.setLevel(logging.INFO)
 logging_monitor.addHandler(handler)
 
-import time
-from get_info import *
+from get_info import get_relationship,get_ObjectId
 from datetime import datetime
 from connect import Connect_Mysql,Connect_Clickhouse
 from queue import Queue
 import threading
 from concurrent.futures import ThreadPoolExecutor,as_completed
+import time
 import subprocess
 from redfish import Dell,Huawei
 
@@ -46,15 +46,15 @@ class Run:
         self.config1=config1
         self.config2=config2
         self.config3=config3
-        self.zd1=get_relationship(self.config1,get_ObjectId(self.config1,"达拉斯"))
+        self.zd1=get_relationship(self.config1,get_ObjectId(self.config1,"庆阳"))
         self.time_=datetime.now()
-        u_p_list=Connect_Mysql(self.config2).get_table_data("","select ip,username,password from power.server_username_and_password")
+        u_p_list=Connect_Mysql(self.config2).get_table_data("","select ip,username,password from hardware.correct_up")
         self.zd2=dict(zip(u_p_list["ip"].values.tolist(),u_p_list[["username","password"]].values.tolist()))
         self.flag=False
         self.tasks1=Queue();self.count1=0;self.lockc1=threading.Lock()
         self.tasks2=Queue();self.count2=0;self.lockc2=threading.Lock()
         self.tasks3=Queue()
-        self.task_pool=[];self.lock1=threading.Lock();self.count3=0
+        self.task_pool=[];self.count3=0;self.lock1=threading.Lock()
         self.tasks4=Queue();self.count4=0;self.lockc3=threading.Lock()
         self.result=[];self.lock2=threading.Lock()
 
@@ -129,7 +129,13 @@ class Run:
                 logging_error.error("账号以及密码缺失。")
                 logging_error.error("="*50)
         else:
-            self.tasks3.put(zd)
+            if zd["ip"] in self.zd2:
+                self.tasks3.put(zd)
+            else:
+                logging_error.error("="*50)
+                logging_error.error(zd)
+                logging_error.error("账号以及密码缺失。")
+                logging_error.error("="*50)
 
     def post_network(self,hostname,ip,brand,type_,rack):
         zd=self.get_zd(hostname,ip,brand,type_,rack)
@@ -233,37 +239,31 @@ class Run:
                 continue
             zd=self.tasks3.get()
             self.tasks3.task_done()
-            if zd["ip"] in self.zd2:
-                cmd=f"ipmitool -I lanplus -H {zd['ip']} -U {self.zd2[zd['ip']][0]} -P '{self.zd2[zd['ip']][1]}' sensor"
-                if zd["brand"]=="lenovo":
-                    cmd=f"ipmitool -I lanplus -H {zd['ip']} -U {self.zd2[zd['ip']][0]} -P '{self.zd2[zd['ip']][1]}' -C 17 sensor"
-                while True:
-                    with self.lock1:
-                        if len(self.task_pool)>=1024:
-                            time.sleep(0.5)
-                            continue
-                        break
-                try:
-                    proc=subprocess.Popen(
-                        cmd,
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        universal_newlines=True,
-                        shell=True
-                    )
-                    with self.lock1:
-                        self.task_pool.append((proc,zd,cmd,time.time()))
-                except Exception as e:
-                    logging_error.error("="*50)
-                    logging_error.error("系统错误。")
-                    logging_error.error(zd)
-                    logging_error.error(cmd)
-                    logging_error.error(e)
-                    logging_error.error("="*50)
-            else:
+            cmd=f"ipmitool -I lanplus -H {zd['ip']} -U {self.zd2[zd['ip']][0]} -P '{self.zd2[zd['ip']][1]}' sensor"
+            if zd["brand"]=="lenovo":
+                cmd=f"ipmitool -I lanplus -H {zd['ip']} -U {self.zd2[zd['ip']][0]} -P '{self.zd2[zd['ip']][1]}' -C 17 sensor"
+            while True:
+                with self.lock1:
+                    if len(self.task_pool)>=1024:
+                        time.sleep(0.5)
+                        continue
+                    break
+            try:
+                proc=subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    universal_newlines=True,
+                    shell=True
+                )
+                with self.lock1:
+                    self.task_pool.append((proc,zd,cmd,time.time()))
+            except Exception as e:
                 logging_error.error("="*50)
+                logging_error.error("系统错误。")
                 logging_error.error(zd)
-                logging_error.error("账号以及密码缺失。")
+                logging_error.error(cmd)
+                logging_error.error(e)
                 logging_error.error("="*50)
 
     def process_else_demo2(self,message):
