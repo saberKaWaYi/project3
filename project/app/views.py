@@ -293,7 +293,8 @@ import urllib
 
 @api_view(['POST'])
 def rack_power(request):
-    zd={};zd["code"]=200;zd["msg"]="";zd["data"]={}
+    zd={}
+    zd["code"]=200;zd["msg"]="";zd["data"]={}
     zd["data"]["power_data"]=[]
     begin_time=request.data["begin_time"];end_time=request.data["end_time"]
     city=request.data["city"];data_center=request.data["data_center"];room=request.data["room"];rack=request.data["rack"]
@@ -301,8 +302,9 @@ def rack_power(request):
     SELECT voltage,current,power,ts FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
     '''
     conn=Connect_Clickhouse()
-    client=conn.client
     data=conn.query(query)[["voltage","current","power","ts"]].values.tolist()
+    if not data:
+        return Response(zd)
     temp={}
     for i in data:
         if i[3] not in temp:
@@ -346,7 +348,8 @@ from django.http import FileResponse
 
 @api_view(['POST'])
 def rack_power_excel(request):
-    zd={};zd["code"]=200;zd["msg"]="";zd["data"]={}
+    zd={}
+    zd["code"]=200;zd["msg"]="";zd["data"]={}
     zd["data"]["power_data"]=[]
     begin_time=request.data["begin_time"];end_time=request.data["end_time"]
     city=request.data["city"];data_center=request.data["data_center"];room=request.data["room"];rack=request.data["rack"]
@@ -354,7 +357,6 @@ def rack_power_excel(request):
     SELECT voltage,current,power,ts FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
     '''
     conn=Connect_Clickhouse()
-    client=conn.client
     data=conn.query(query)[["voltage","current","power","ts"]].values.tolist()
     temp={}
     for i in data:
@@ -394,7 +396,6 @@ def power_csv_all(request):
     SELECT * FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' ORDER BY ts ASC LIMIT {str(batch_size)} OFFSET 
     '''
     conn=Connect_Clickhouse()
-    client=conn.client
     temp_dir=os.path.join(os.getcwd(),"temp_files")
     os.makedirs(temp_dir,exist_ok=True)
     temp_file=tempfile.NamedTemporaryFile(
