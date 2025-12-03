@@ -261,7 +261,7 @@ def menu_data(request):
     temp={}
     for i in data:
         a,b,c,d=i[0],i[1],i[2],i[3]
-        s=a+"-"+b+"-"+c
+        s=(a,b,c)
         if s not in temp:
             temp[s]=set()
         temp[s].add(d)
@@ -274,8 +274,11 @@ def menu_data(request):
             lt_temp.sort()
             lt_temp=[f"{i[0]}-{i[1]}" for i in lt_temp]
         zd_temp={}
-        zd_temp["code"]=i
-        zd_temp["name"]=i
+        zd_temp["code"]="-".join(list(i))
+        zd_temp["name"]="-".join(list(i))
+        zd_temp["city"]=i[0]
+        zd_temp["data_center"]=i[1]
+        zd_temp["room"]=i[2]
         zd_temp["rack_list"]=lt_temp
         zd["data"].append(zd_temp)
     zd["data"]=sorted(zd["data"],key=lambda item:item["code"])
