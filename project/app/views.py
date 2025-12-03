@@ -279,6 +279,7 @@ def menu_data(request):
         zd_temp["name"]=i
         zd_temp["rack_list"]=lt_temp
         zd["data"].append(zd_temp)
+    zd["data"]=sorted(zd["data"],key=lambda item:item["code"])
     return Response(zd)
 
 def demo(lt):
