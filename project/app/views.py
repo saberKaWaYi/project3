@@ -161,7 +161,7 @@ class Connect_Mongodb:
 
 from bson import ObjectId
 
-def get_relationship(city_ObjectId):
+def get_relationship(city_ObjectIds):
     conn=Connect_Mongodb()
     pipeline=[
         {
@@ -198,8 +198,8 @@ def get_relationship(city_ObjectId):
     pipeline[2]["$match"]['device_server_group']={'$ne':ObjectId("5ec8c70a94285cfd9cacee9b")}
     pipeline[2]["$match"]['device_server_type']={'$ne':ObjectId("5ec8c70a94285cfd9caceebf")}
     jh2=set(pd.DataFrame(list(conn.db.cds_ci_att_value_server.aggregate(pipeline))).astype(str)["hostname"].values.tolist())
-    data1=conn.get_collection("cds_ci_location_detail",{"status":1,"ci_name":"network","position_id":ObjectId(city_ObjectId)},{"position_id":1,"data_center_id":1,"room_id":1,"rack_id":1,"device_id":1})[["position_id","data_center_id","room_id","rack_id","device_id"]].values.tolist()
-    data2=conn.get_collection("cds_ci_location_detail",{"status":1,"ci_name":"server","position_id":ObjectId(city_ObjectId)},{"position_id":1,"data_center_id":1,"room_id":1,"rack_id":1,"device_id":1})[["position_id","data_center_id","room_id","rack_id","device_id"]].values.tolist()
+    data1=conn.get_collection("cds_ci_location_detail",{"status":1,"ci_name":"network","position_id":{"$in":city_ObjectIds}},{"position_id":1,"data_center_id":1,"room_id":1,"rack_id":1,"device_id":1})[["position_id","data_center_id","room_id","rack_id","device_id"]].values.tolist()
+    data2=conn.get_collection("cds_ci_location_detail",{"status":1,"ci_name":"server","position_id":{"$in":city_ObjectIds}},{"position_id":1,"data_center_id":1,"room_id":1,"rack_id":1,"device_id":1})[["position_id","data_center_id","room_id","rack_id","device_id"]].values.tolist()
     city=conn.get_collection("cds_ci_att_value_position",{"status":1},{"_id":1,"city":1})[["_id","city"]].values.tolist()
     city_dict=dict(zip([i[0] for i in city],[i[1] for i in city]))
     data_center=conn.get_collection("cds_ci_att_value_data_center",{"status":1},{"_id":1,"data_center_name":1})[["_id","data_center_name"]].values.tolist()
@@ -241,10 +241,10 @@ def get_relationship(city_ObjectId):
         del zd[i]
     return zd
 
-def get_ObjectId(city_name):
+def get_ObjectId(city_names):
     conn=Connect_Mongodb()
-    city_ObjectId=conn.get_collection("cds_ci_att_value_position",{"status":1,"city":city_name},{"_id":1})["_id"].values.tolist()[0]
-    return city_ObjectId
+    city_ObjectId=conn.get_collection("cds_ci_att_value_position",{"status":1,"city":{"$in":city_names}},{"_id":1})["_id"].values.tolist()
+    return [ObjectId(i) for i in city_ObjectId]
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -254,11 +254,10 @@ def menu_data(request):
     zd={}
     zd["code"]=200;zd["msg"]=""
     data=[]
-    for city in ["庆阳","达拉斯","台北"]:
-        temp=get_relationship(get_ObjectId(city))
-        for _ in list(temp.keys()):
-            _=_.split("|")
-            data.append(_)
+    temp=get_relationship(get_ObjectId(["庆阳","达拉斯","台北"]))
+    for _ in list(temp.keys()):
+        _=_.split("|")
+        data.append(_)
     temp={}
     for i in data:
         a,b,c,d=i[0],i[1],i[2],i[3]
@@ -305,6 +304,10 @@ def rack_power(request):
     conn=Connect_Clickhouse()
     data=conn.query(query)[["voltage","current","power","ts"]].values.tolist()
     if not data:
+        lt1={"max":0,"min":0,"name":"V","unit":"V","data":[["time",""],["V",""]]}
+        lt2={"max":0,"min":0,"name":"A","unit":"A","data":[["time",""],["A",""]]}
+        lt3={"max":0,"min":0,"name":"KW","unit":"KW","data":[["time",""],["KW",""]]}
+        zd["data"]["power_data"]=[lt1,lt2,lt3]
         return Response(zd)
     temp={}
     for i in data:
