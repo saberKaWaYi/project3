@@ -269,10 +269,10 @@ def menu_data(request):
     for i in temp:
         lt_temp=list(temp[i])
         lt_temp.sort()
-        if i.split("-")[0]=="庆阳" and "-" in lt_temp[0]:
-            lt_temp=[(int(i.split("-")[0]),int(i.split("-")[1])) for i in lt_temp]
+        if i[0]=="庆阳" and "-" in lt_temp[0]:
+            lt_temp=[(int(_.split("-")[0]),int(_.split("-")[1])) for _ in lt_temp]
             lt_temp.sort()
-            lt_temp=[f"{i[0]}-{i[1]}" for i in lt_temp]
+            lt_temp=[f"{_[0]}-{_[1]}" for _ in lt_temp]
         zd_temp={}
         zd_temp["code"]="-".join(list(i))
         zd_temp["name"]="-".join(list(i))
