@@ -448,11 +448,10 @@ def rack_power_list(request):
     SELECT voltage,current,power,ts,hostname,type,ip FROM power.power_data WHERE ts >='{begin_time}' AND ts<='{end_time}' AND city='{city}' AND data_center='{data_center}' AND room='{room}' AND rack='{rack}' ORDER BY ts ASC
     '''
     conn=Connect_Clickhouse()
-    data=conn.query(query)[["voltage","current","power","ts","ip","hostname","type"]].values.tolist()
-    if not data:
-        return Response(zd)
+    data1=conn.query(query)[["voltage","current","power","ts","ip","hostname","type"]].values.tolist()
+    data2=get_relationship(get_ObjectId([city]))[f"{city}|{data_center}|{room}|{rack}"]
     zd_temp={}
-    for i in data:
+    for i in data1:
         if i[-2] not in zd_temp:
             zd_temp[i[-2]]={}
             zd_temp[i[-2]]["hostname"]=i[-2]+"("+i[-3]+")"
@@ -480,6 +479,22 @@ def rack_power_list(request):
         zd_temp[i]["data_info"][2]["data"][1].insert(0,"KW")
     for i in zd_temp:
         zd["data"].append(zd_temp[i])
+    jh=set()
+    for i in zd["data"]:
+        jh.add(i["hostname"])
+    for i in data2:
+        hostname=i[0];ip=i[1];brand=i[2];type_=i[3]
+        hostname="-".join([i.strip() for i in hostname.split("-")]);ip=".".join([i.strip() for i in ip.split(".")]);brand=brand.lower()
+        hostname=f"{hostname}({ip})"
+        if hostname in jh:
+            continue
+        temp={}
+        temp["hostname"]=hostname;temp["type"]=type_;temp["data_info"]=[]
+        lt1={"max":0,"min":0,"name":"V","unit":"V","data":[["time",""],["V",""]]}
+        lt2={"max":0,"min":0,"name":"A","unit":"A","data":[["time",""],["A",""]]}
+        lt3={"max":0,"min":0,"name":"KW","unit":"KW","data":[["time",""],["KW",""]]}
+        temp["data_info"]=[lt1,lt2,lt3]
+        zd["data"].append(temp)
     return Response(zd)
 
 @api_view(['POST'])
